@@ -5,19 +5,61 @@ import { Sidebar } from "@/components/chat/sidebar";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 import { Button } from "@/components/ui/button";
-import { Menu, Download, MoreVertical, Code, Palette, Briefcase, GraduationCap, BarChart3, Lightbulb } from "lucide-react";
+import { Menu, Download, MoreVertical, Code, Palette, Briefcase, GraduationCap, BarChart3, Lightbulb, Settings } from "lucide-react";
 import type { ChatSession, Message } from "@shared/schema";
+import { Link } from "wouter";
+
+interface Settings {
+  theme: string;
+  primaryColor: string;
+  tone: string;
+  customPersonalities: Array<{
+    id: string;
+    name: string;
+    description: string;
+    prompt: string;
+    icon: string;
+  }>;
+  quickShortcuts: Array<{ id: string; title: string; text: string }>;
+}
 
 export default function Chat() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedPersonality, setSelectedPersonality] = useState<string>("");
+  const [settings, setSettings] = useState<Settings>({
+    theme: 'light',
+    primaryColor: 'green',
+    tone: 'friendly',
+    customPersonalities: [],
+    quickShortcuts: []
+  });
   const queryClient = useQueryClient();
 
   // Fetch chat sessions
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<ChatSession[]>({
     queryKey: ["/api/chat-sessions"],
   });
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('chatSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setSettings(parsedSettings);
+      
+      // Apply theme
+      document.documentElement.className = parsedSettings.theme;
+      
+      // Apply primary color
+      const hues = {
+        green: '142', blue: '210', purple: '270', 
+        red: '0', orange: '30', pink: '320'
+      };
+      const hue = hues[parsedSettings.primaryColor as keyof typeof hues] || '142';
+      document.documentElement.style.setProperty('--primary-hue', hue);
+    }
+  }, []);
 
   // Fetch messages for current session
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
@@ -45,7 +87,8 @@ export default function Chat() {
     mutationFn: async ({ sessionId, content, personality }: { sessionId: string; content: string; personality?: string }) => {
       const response = await apiRequest("POST", `/api/chat-sessions/${sessionId}/messages`, {
         content,
-        personality
+        personality: personality || selectedPersonality,
+        tone: settings.tone
       });
       return response.json();
     },
@@ -91,7 +134,22 @@ export default function Chat() {
       analyst: 'محلل بيانات',
       creative: 'مبدع مفكر'
     };
+    
+    // Check custom personalities
+    const customPersonality = settings.customPersonalities.find(p => p.id === personality);
+    if (customPersonality) {
+      return customPersonality.name;
+    }
+    
     return names[personality as keyof typeof names] || 'مساعد ذكي';
+  };
+
+  const getPersonalityIcon = (personality: string) => {
+    const customPersonality = settings.customPersonalities.find(p => p.id === personality);
+    if (customPersonality) {
+      return customPersonality.icon;
+    }
+    return '🤖';
   };
 
   return (
@@ -147,6 +205,11 @@ export default function Chat() {
             </div>
             
             <div className="flex items-center gap-2">
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" data-testid="button-settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon" data-testid="button-download">
                 <Download className="h-4 w-4" />
               </Button>
@@ -234,6 +297,21 @@ export default function Chat() {
               <Lightbulb className="h-3 w-3 ml-2" />
               مبدع
             </Button>
+
+            {/* Custom Personalities */}
+            {settings.customPersonalities.map(personality => (
+              <Button
+                key={personality.id}
+                variant={selectedPersonality === personality.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPersonality(personality.id)}
+                className="h-8 text-xs"
+                data-testid={`personality-${personality.id}`}
+              >
+                <span className="ml-2 text-xs">{personality.icon}</span>
+                {personality.name}
+              </Button>
+            ))}
           </div>
         </div>
 

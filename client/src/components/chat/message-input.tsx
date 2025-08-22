@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Paperclip, Loader2 } from "lucide-react";
+import { Send, Paperclip, Loader2, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MessageInputProps {
@@ -12,8 +12,19 @@ interface MessageInputProps {
 
 export function MessageInput({ onSendMessage, isLoading, disabled }: MessageInputProps) {
   const [message, setMessage] = useState("");
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [shortcuts, setShortcuts] = useState<Array<{ id: string; title: string; text: string }>>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+
+  // Load shortcuts from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('chatSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setShortcuts(parsedSettings.quickShortcuts || []);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,9 +71,53 @@ export function MessageInput({ onSendMessage, isLoading, disabled }: MessageInpu
     textareaRef.current?.focus();
   }, []);
 
+  const handleShortcutClick = (shortcutText: string) => {
+    setMessage(shortcutText);
+    setShowShortcuts(false);
+    textareaRef.current?.focus();
+  };
+
   return (
     <div className="bg-white border-t border-slate-200 p-4 lg:p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Quick Shortcuts */}
+        {shortcuts.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowShortcuts(!showShortcuts)}
+                className="text-xs text-slate-600 hover:text-slate-800"
+                data-testid="button-toggle-shortcuts"
+              >
+                <Zap className="h-3 w-3 ml-1" />
+                اختصارات سريعة
+              </Button>
+            </div>
+            
+            {showShortcuts && (
+              <div className="flex flex-wrap gap-2 animate-fade-in">
+                {shortcuts.map(shortcut => (
+                  <Button
+                    key={shortcut.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShortcutClick(shortcut.text)}
+                    className="text-xs h-8"
+                    disabled={disabled || isLoading}
+                    data-testid={`shortcut-${shortcut.id}`}
+                  >
+                    {shortcut.title}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex gap-3 items-end">
           <div className="flex-1 relative">
             <Textarea
@@ -106,7 +161,7 @@ export function MessageInput({ onSendMessage, isLoading, disabled }: MessageInpu
         <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <i className="fas fa-info-circle"></i>
-            <span>مدعوم بواسطة OpenAI GPT</span>
+            <span>مدعوم بواسطة Google Gemini</span>
           </div>
           <div className="text-xs text-slate-400">
             {message.length}/4000 حرف

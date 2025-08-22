@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack chat application built with React and Express that provides an AI-powered conversational interface in Arabic. The application integrates with OpenAI's GPT-4o model to deliver intelligent responses while maintaining chat history through session management. The interface is designed with Arabic language support and uses a modern, responsive design system built with shadcn/ui components and Tailwind CSS.
+WORM is a full-stack AI chat application built with React and Express that provides an advanced conversational interface in Arabic with a magical and futuristic design. The application integrates with OpenAI's GPT-4o model to deliver intelligent responses while maintaining chat history through session management. The interface is designed with Arabic language support and uses a modern, responsive design system built with shadcn/ui components and Tailwind CSS.
 
 ## User Preferences
 

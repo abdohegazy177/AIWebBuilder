@@ -189,12 +189,16 @@ export default function Chat() {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
-                  <i className="fas fa-robot text-white text-sm"></i>
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                    <path d="M12 2C8.5 2 6 4.5 6 8c0 2.5 1.5 4.5 3.5 5.5L8 18c-0.5 1 0.5 2 1.5 1.5L12 18l2.5 1.5c1-0.5 2-0.5 1.5-1.5l-1.5-4.5C16.5 12.5 18 10.5 18 8c0-3.5-2.5-6-6-6zm-1 14l1 2 1-2-1-0.5L11 16z" />
+                    <circle cx="10" cy="7" r="1.2" fill="white" opacity="0.8"/>
+                    <circle cx="14" cy="7" r="1.2" fill="white" opacity="0.8"/>
+                  </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {selectedPersonality ? getPersonalityName(selectedPersonality) : 'مساعد ذكي'}
+                  <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent">
+                    {selectedPersonality ? getPersonalityName(selectedPersonality) : 'WORM'}
                   </h2>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>

@@ -42,12 +42,16 @@ export function Sidebar({
       {/* Header */}
       <div className="p-6 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-            <i className="fas fa-robot text-white text-lg"></i>
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
+              <path d="M12 2C8.5 2 6 4.5 6 8c0 2.5 1.5 4.5 3.5 5.5L8 18c-0.5 1 0.5 2 1.5 1.5L12 18l2.5 1.5c1-0.5 2-0.5 1.5-1.5l-1.5-4.5C16.5 12.5 18 10.5 18 8c0-3.5-2.5-6-6-6zm-1 14l1 2 1-2-1-0.5L11 16z" />
+              <circle cx="10" cy="7" r="1.5" fill="white" opacity="0.8"/>
+              <circle cx="14" cy="7" r="1.5" fill="white" opacity="0.8"/>
+            </svg>
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">مساعد الذكاء الاصطناعي</h1>
-            <p className="text-sm text-slate-500">مساعدك الشخصي المدعوم بـ OpenAI</p>
+            <h1 className="text-lg font-semibold bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent">WORM</h1>
+            <p className="text-sm text-slate-500">مساعد ذكي متطور وخيالي</p>
           </div>
         </div>
       </div>

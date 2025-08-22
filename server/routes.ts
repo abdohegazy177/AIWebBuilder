@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send message and get AI response
   app.post("/api/chat-sessions/:id/messages", async (req, res) => {
     try {
-      const { content } = req.body;
+      const { content, personality } = req.body;
       const chatSessionId = req.params.id;
 
       if (!content || typeof content !== 'string') {
@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(msg => ({ role: msg.role, content: msg.content }));
 
       // Generate AI response
-      const aiResponse = await generateChatResponse(content, conversationHistory);
+      const aiResponse = await generateChatResponse(content, conversationHistory, personality);
       
       if (aiResponse.error) {
         return res.status(500).json({ 

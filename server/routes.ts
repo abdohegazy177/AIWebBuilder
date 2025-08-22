@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertChatSessionSchema, insertMessageSchema } from "@shared/schema";
+import { insertChatSessionSchema, insertMessageSchema, generateImageSchema, generateVideoSchema } from "@shared/schema";
 import { generateChatResponse, generateChatTitle } from "./lib/gemini";
+import { generateImage, detectImageRequest, extractImagePrompt, type ImageGenerationRequest } from "./lib/image-generation";
+import { generateVideo, detectVideoRequest, extractVideoPrompt, checkVideoStatus, type VideoGenerationRequest } from "./lib/video-generation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -88,7 +90,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userMessage = await storage.createMessage({
         chatSessionId,
         content,
-        role: "user"
+        role: "user",
+        messageType: 'text'
       });
 
       // Get conversation history for context
@@ -97,8 +100,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(msg => msg.id !== userMessage.id) // Exclude the just-added message
         .map(msg => ({ role: msg.role, content: msg.content }));
 
-      // Generate AI response  
-      const aiResponse = await generateChatResponse(content, conversationHistory, personality, tone);
+      // Check if user wants to generate image or video
+      let aiResponse;
+      let mediaUrl = null;
+      let messageType = 'text';
+      let mediaPrompt = null;
+      
+      if (detectImageRequest(content)) {
+        // Handle image generation
+        const imagePrompt = extractImagePrompt(content);
+        const imageResult = await generateImage({ prompt: imagePrompt });
+        
+        if (imageResult.success && imageResult.imageUrl) {
+          mediaUrl = imageResult.imageUrl;
+          messageType = 'image';
+          mediaPrompt = imagePrompt;
+          aiResponse = {
+            message: `🎨 تم! اتفضل الصورة الجميلة دي! استخدمت ${imageResult.model} عشان أطلعهالك حلوة أوي 😍\n\nالوصف: ${imagePrompt}`
+          };
+        } else {
+          aiResponse = {
+            message: `😅 آسف يا حبيبي، مقدرتش أعمل الصورة دلوقتي. ${imageResult.error || 'جرب تاني بعد شوية!'}`
+          };
+        }
+      } else if (detectVideoRequest(content)) {
+        // Handle video generation
+        const videoPrompt = extractVideoPrompt(content);
+        const videoResult = await generateVideo({ prompt: videoPrompt });
+        
+        if (videoResult.success) {
+          if (videoResult.videoUrl) {
+            mediaUrl = videoResult.videoUrl;
+            messageType = 'video';
+            mediaPrompt = videoPrompt;
+            aiResponse = {
+              message: `🎬 يلا! الفيديو جاهز! استخدمت ${videoResult.model} عشان أعملهولك حلو أوي 🔥\n\nالوصف: ${videoPrompt}`
+            };
+          } else if (videoResult.jobId) {
+            aiResponse = {
+              message: `⏳ الفيديو بيتعمل دلوقتي يا برو! هياخد دقيقة أو اتنين. استخدمت ${videoResult.model} عشان أطلعهولك جامد 🚀\n\nالوصف: ${videoPrompt}`
+            };
+          }
+        } else {
+          aiResponse = {
+            message: `😅 آسف يا حبيبي، مقدرتش أعمل الفيديو دلوقتي. ${videoResult.error || 'جرب تاني بعد شوية!'}`
+          };
+        }
+      } else {
+        // Generate regular chat response
+        aiResponse = await generateChatResponse(content, conversationHistory, personality, tone);
+      }
+      
+      if (!aiResponse) {
+        throw new Error("Failed to generate response");
+      }
       
       if (aiResponse.error) {
         return res.status(500).json({ 
@@ -107,11 +162,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Save AI response
+      // Save AI response with media if present
       const assistantMessage = await storage.createMessage({
         chatSessionId,
         content: aiResponse.message,
-        role: "assistant"
+        role: "assistant",
+        messageType,
+        mediaUrl,
+        mediaPrompt
       });
 
       // If this is the first message, update chat session title
@@ -131,6 +189,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing message:", error);
       res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+
+  // Image generation endpoint
+  app.post("/api/generate-image", async (req, res) => {
+    try {
+      const data = generateImageSchema.parse(req.body);
+      const imageRequest: ImageGenerationRequest = {
+        prompt: data.prompt,
+        model: data.model === 'firefly' ? 'dall-e-3' : data.model,
+        size: data.size,
+        style: data.style
+      };
+      const result = await generateImage(imageRequest);
+      
+      if (result.success) {
+        res.json({ success: true, imageUrl: result.imageUrl, model: result.model });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+      res.status(400).json({ success: false, error: "Invalid request data" });
+    }
+  });
+
+  // Video generation endpoint
+  app.post("/api/generate-video", async (req, res) => {
+    try {
+      const data = generateVideoSchema.parse(req.body);
+      const videoRequest: VideoGenerationRequest = {
+        prompt: data.prompt,
+        model: data.model === 'pika-2.2' ? 'replicate-video' : data.model,
+        duration: data.duration,
+        aspectRatio: data.aspectRatio
+      };
+      const result = await generateVideo(videoRequest);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          videoUrl: result.videoUrl, 
+          model: result.model,
+          jobId: result.jobId 
+        });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error generating video:", error);
+      res.status(400).json({ success: false, error: "Invalid request data" });
+    }
+  });
+
+  // Check video status endpoint
+  app.get("/api/video-status/:jobId", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      const { model } = req.query;
+      
+      if (!model || typeof model !== 'string') {
+        return res.status(400).json({ success: false, error: "Model parameter required" });
+      }
+      
+      const result = await checkVideoStatus(jobId, model);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          videoUrl: result.videoUrl, 
+          model: result.model 
+        });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error checking video status:", error);
+      res.status(500).json({ success: false, error: "Failed to check status" });
     }
   });
 

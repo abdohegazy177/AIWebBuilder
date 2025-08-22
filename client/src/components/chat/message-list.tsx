@@ -41,10 +41,13 @@ export function MessageList({ messages, isLoading, isTyping }: MessageListProps)
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
             <i className="fas fa-robot text-white text-2xl"></i>
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">مرحباً بك في مساعد الذكاء الاصطناعي</h3>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">مرحباً بك في WORM 🚀</h3>
           <p className="text-slate-600 max-w-md mx-auto">
-            يمكنني مساعدتك في الإجابة على أسئلتك، حل المشاكل، أو حتى إجراء محادثة ودية. كيف يمكنني مساعدتك اليوم؟
+            أنا مساعدك الذكي! يمكنني الإجابة على أسئلتك، إنشاء صور رائعة، وحتى عمل فيديوهات بالذكاء الاصطناعي! 🎨🎬
           </p>
+          <div className="mt-4 text-sm text-slate-500">
+            <p>جرب قول: "اعمل صورة لسيارة رياضية" أو "اعمل فيديو لقطة جميلة"</p>
+          </div>
         </div>
       ) : (
         messages.map((message) => (

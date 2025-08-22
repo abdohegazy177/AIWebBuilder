@@ -102,7 +102,10 @@ export class MemStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = randomUUID();
     const message: Message = { 
-      ...insertMessage, 
+      ...insertMessage,
+      messageType: insertMessage.messageType || 'text',
+      mediaUrl: insertMessage.mediaUrl || null,
+      mediaPrompt: insertMessage.mediaPrompt || null,
       id, 
       createdAt: new Date() 
     };
